@@ -12,6 +12,9 @@ function createToken(user) {
     {
       sub: user._id.toString(),
       role: user.role,
+      name: user.name,
+      email: user.email,
+      phoneNumber: user.phoneNumber || null,
     },
     process.env.JWT_SECRET,
     { expiresIn: "7d" },
