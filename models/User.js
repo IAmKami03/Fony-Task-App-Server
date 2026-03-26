@@ -5,6 +5,7 @@ const crypto = require("crypto");
 const userSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true, maxlength: 80 },
+    avatar: { type: String, default: null }, // Cloudinary URL
     email: {
       type: String,
       required: true,

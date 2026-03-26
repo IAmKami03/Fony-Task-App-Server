@@ -229,3 +229,95 @@ exports.resetPasswordWithOTP = async (req, res) => {
     res.status(500).json({ message: "Reset failed" });
   }
 };
+
+exports.getMe = async (req, res) => {
+  try {
+    res.json({
+      user: {
+        id: req.user._id,
+        name: req.user.name,
+        email: req.user.email,
+        role: req.user.role,
+        phoneNumber: req.user.phoneNumber,
+        avatar: req.user.avatar || null,
+      },
+    });
+  } catch (error) {
+    console.error("Get me error:", error);
+    res.status(500).json({ message: "Failed to get user." });
+  }
+};
+
+exports.updateProfile = async (req, res) => {
+  try {
+    const { name, phoneNumber } = req.body;
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found." });
+    }
+
+    // Update name if provided
+    if (name && name.trim()) {
+      user.name = name.trim();
+    }
+
+    // Update phone number if provided
+    if (phoneNumber && phoneNumber.trim()) {
+      // Check phone not taken by another user
+      const existing = await User.findOne({
+        phoneNumber: phoneNumber.trim(),
+        _id: { $ne: user._id },
+      });
+      if (existing) {
+        return res
+          .status(409)
+          .json({ message: "Phone number already in use." });
+      }
+      user.phoneNumber = phoneNumber.trim();
+    }
+
+    // Upload new avatar to Cloudinary if provided
+    if (req.file) {
+      const cloudinary = require("cloudinary").v2;
+
+      // Delete old avatar if exists
+      if (user.avatar) {
+        const publicId = user.avatar
+          .split("/")
+          .slice(-2)
+          .join("/")
+          .replace(/\.[^/.]+$/, "");
+        await cloudinary.uploader.destroy(publicId).catch(() => {});
+      }
+
+      const result = await new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+          { folder: "fony-avatars" },
+          (error, result) => (error ? reject(error) : resolve(result)),
+        );
+        stream.end(req.file.buffer);
+      });
+
+      user.avatar = result.secure_url;
+    }
+
+    await user.save();
+
+    res.json({
+      success: true,
+      message: "Profile updated successfully.",
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        phoneNumber: user.phoneNumber,
+        avatar: user.avatar,
+      },
+    });
+  } catch (error) {
+    console.error("Update profile error:", error);
+    res.status(500).json({ message: "Failed to update profile." });
+  }
+};
