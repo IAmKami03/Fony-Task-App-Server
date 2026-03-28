@@ -24,7 +24,11 @@ const userSchema = new mongoose.Schema(
       trim: true,
       index: true,
       validate: {
-        validator: (v) => /^\+?[\d\s\-().]{7,20}$/.test(v),
+        validator: function (v) {
+          // Skip validation if no phone number (Google users)
+          if (!v) return true;
+          return /^\+?[\d\s\-().]{7,20}$/.test(v);
+        },
         message: "Invalid phone number format.",
       },
     },

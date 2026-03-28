@@ -13,6 +13,10 @@ passport.use(
       try {
         const email = profile.emails?.[0]?.value;
 
+        if (!email) {
+          return done(new Error("No email returned from Google"), null);
+        }
+
         // check if user already exists
         let user = await User.findOne({
           $or: [{ googleId: profile.id }, { email }],
@@ -32,7 +36,6 @@ passport.use(
           name: profile.displayName,
           email,
           googleId: profile.id,
-          // phoneNumber is required in your schema — handle this below
         });
 
         return done(null, user);
