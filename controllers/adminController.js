@@ -79,6 +79,7 @@ exports.getUsersWithTaskCount = async (req, res) => {
           $project: {
             name: 1,
             email: 1,
+            avatar: 1,
             role: 1,
             createdAt: 1,
             lastLoginAt: 1,
